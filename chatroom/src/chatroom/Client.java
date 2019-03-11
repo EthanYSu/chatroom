@@ -7,30 +7,30 @@ import java.io.*;
 import java.net.*;
 
 public class Client {
-	static Socket socket;
-	static OutputStream outputStream;
-	public static class ChatClient {
-
+	static class ChatClient {
+		static Socket socket;
+		static OutputStream outputStream;
+		
 		public void initializeSocket(String server, int port) throws UnknownHostException, IOException {
 			// create Socket and read info
 			socket = new Socket(server, port);
 			outputStream = socket.getOutputStream();
-
+			
 			// creating a thread for receiving messages
 			Thread incomingThread = new Thread() {
+				@Override
 				public void run() {
 					try {
 						BufferedReader bufferedReader = new BufferedReader(
 								new InputStreamReader(socket.getInputStream()));
-						String currentLine;
-						while ((currentLine = bufferedReader.readLine()) != null) {
+						//String currentLine;
+						while (bufferedReader.readLine() != null) {
 							notifyAll();
 						}
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-
 				}
 			};
 			incomingThread.start();
@@ -48,6 +48,7 @@ public class Client {
 		public void sendMessage(String message) {
 			try {
 				outputStream.write((message+"\n").getBytes());
+				outputStream.flush();
 			}catch (Exception e) {
 				// TODO: handle exception
 				System.out.println("Error:" + e);
@@ -55,40 +56,44 @@ public class Client {
 		}
 	}
 	
-	public static class ChatGUI extends JFrame{
+	static class ChatGUI extends JFrame{
 		/**
 		 * 
 		 */
 		private static final long serialVersionUID = 1L;
-
-		static ChatClient chatClient;
+		private JTextArea textArea;
+		private JTextField inputField;
+		private JButton sendButton;
+		private ChatClient chatClient;
+		
 		public ChatGUI(ChatClient chatClient) {
-			ChatGUI.chatClient = chatClient;
+			this.chatClient = chatClient;
 			createChatRoom();
 		}
 		
 		private void createChatRoom() {
-			JTextArea textArea = new JTextArea(40,40);
+			textArea = new JTextArea(40,40);
+			
 			add(new JScrollPane(textArea), BorderLayout.CENTER);
 			Box box = Box.createHorizontalBox();
             add(box, BorderLayout.SOUTH);
-            JTextField inputTextField = new JTextField();
-            JButton sendButton = new JButton("Send");
-            box.add(inputTextField);
+            inputField = new JTextField();
+            sendButton = new JButton("Send");
+            box.add(inputField);
             box.add(sendButton);
 
             // Action for the inputTextField and the goButton
             ActionListener sendListener = new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
-                    String str = inputTextField.getText();
+                    String str = inputField.getText();
                     if (str != null && str.trim().length() > 0)
                         chatClient.sendMessage(str);
-                    inputTextField.selectAll();
-                    inputTextField.requestFocus();
-                    inputTextField.setText("");
+                    inputField.selectAll();
+                    inputField.requestFocus();
+                    inputField.setText("");
                 }
             };
-            inputTextField.addActionListener(sendListener);
+            inputField.addActionListener(sendListener);
             sendButton.addActionListener(sendListener);
 
             this.addWindowListener(new WindowAdapter() {
@@ -102,9 +107,9 @@ public class Client {
 	
 	public static void main(String args) {
         String server = args;
-        int port = 8080;
+        int port = 3000;
         ChatClient access = new ChatClient();
-
+        System.out.println("hello");
         JFrame frame = new ChatGUI(access);
         frame.setTitle("MyChatApp - connected to " + server + ":" + port);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
